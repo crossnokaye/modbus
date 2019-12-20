@@ -30,7 +30,7 @@ type Client interface {
 	ReadHoldingRegisters(address, quantity uint16) (results []byte, err error)
 	// WriteSingleRegister writes a single holding register in a remote
 	// device and returns register value.
-	WriteSingleRegister(address, value uint16) (results []byte, err error)
+	WriteSingleRegister(address uint32, value uint16) (results []byte, err error)
 	// WriteMultipleRegisters writes a block of contiguous registers
 	// (1 to 123 registers) in a remote device and returns quantity of
 	// registers.

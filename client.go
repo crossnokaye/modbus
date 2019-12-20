@@ -7,6 +7,7 @@ package modbus
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
 )
 
 // ClientHandler is the interface that groups the Packager and Transporter methods.
@@ -197,33 +198,44 @@ func (mb *client) WriteSingleCoil(address, value uint16) (results []byte, err er
 
 // Request:
 //  Function code         : 1 byte (0x06)
-//  Register address      : 2 bytes
+//  Register address      : 2 or 4 bytes
 //  Register value        : 2 bytes
 // Response:
 //  Function code         : 1 byte (0x06)
 //  Register address      : 2 bytes
 //  Register value        : 2 bytes
-func (mb *client) WriteSingleRegister(address, value uint16) (results []byte, err error) {
+func (mb *client) WriteSingleRegister(address uint32, value uint16) (results []byte, err error) {
 	request := ProtocolDataUnit{
 		FunctionCode: FuncCodeWriteSingleRegister,
-		Data:         dataBlock(address, value),
+		Data:         dataBlockEx(address, value),
 	}
 	response, err := mb.send(&request)
 	if err != nil {
 		return
 	}
-	// Fixed response length
-	if len(response.Data) != 4 {
-		err = fmt.Errorf("modbus: response data size '%v' does not match expected '%v'", len(response.Data), 4)
+	// Reponse can be 4 or 6 bytes depending on if extended addressing is used
+	respLen := len(response.Data)
+	if respLen != 4 && respLen != 6 {
+		err = fmt.Errorf("modbus: response data size '%v' does not match expected 4 or 6 bytes", len(response.Data))
 		return
 	}
-	respValue := binary.BigEndian.Uint16(response.Data)
-	if address != respValue {
-		err = fmt.Errorf("modbus: response address '%v' does not match request '%v'", respValue, address)
+
+	var respAddress uint32
+	var addressSize int
+	if respLen == 4 {
+		respAddress = uint32(binary.BigEndian.Uint16(response.Data))
+		addressSize = 2
+	} else {
+		respAddress = binary.BigEndian.Uint32(response.Data)
+		addressSize = 4
+	}
+
+	if address != respAddress {
+		err = fmt.Errorf("modbus: response address '%v' does not match request '%v'", respAddress, address)
 		return
 	}
-	results = response.Data[2:]
-	respValue = binary.BigEndian.Uint16(results)
+	results = response.Data[addressSize:]
+	respValue := binary.BigEndian.Uint16(results)
 	if value != respValue {
 		err = fmt.Errorf("modbus: response value '%v' does not match request '%v'", respValue, value)
 		return
@@ -469,6 +481,26 @@ func dataBlock(value ...uint16) []byte {
 	data := make([]byte, 2*len(value))
 	for i, v := range value {
 		binary.BigEndian.PutUint16(data[i*2:], v)
+	}
+	return data
+}
+
+// dataBlockEx creates a data block that supports 4 byte extended addresses
+func dataBlockEx(adddress uint32, value ...uint16) []byte {
+	addressSize := 2
+	if adddress >  math.MaxUint16 {
+		addressSize = 4
+	}
+	data := make([]byte, addressSize + 2*len(value))
+
+	if addressSize == 2 {
+		binary.BigEndian.PutUint16(data, uint16(adddress))
+	} else {
+		binary.BigEndian.PutUint32(data, adddress)
+	}
+
+	for i, v := range value {
+		binary.BigEndian.PutUint16(data[addressSize + i*2:], v)
 	}
 	return data
 }
