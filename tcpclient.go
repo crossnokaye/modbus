@@ -33,17 +33,17 @@ type TCPClientHandler struct {
 }
 
 // NewTCPClientHandler allocates a new TCPClientHandler.
-func NewTCPClientHandler(address string) *TCPClientHandler {
+func NewTCPClientHandler(address string, timeout time.Duration, idleTimeout time.Duration) *TCPClientHandler {
 	h := &TCPClientHandler{}
 	h.Address = address
-	h.Timeout = tcpTimeout
-	h.IdleTimeout = tcpIdleTimeout
+	h.Timeout = timeout
+	h.IdleTimeout = idleTimeout
 	return h
 }
 
 // TCPClient creates TCP client with default handler and given connect string.
-func TCPClient(address string) Client {
-	handler := NewTCPClientHandler(address)
+func TCPClient(address string, timeout time.Duration, idleTimeout time.Duration) Client {
+	handler := NewTCPClientHandler(address, timeout, idleTimeout)
 	return NewClient(handler)
 }
 
