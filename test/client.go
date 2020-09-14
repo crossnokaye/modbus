@@ -7,7 +7,7 @@ package test
 import (
 	"testing"
 
-	"github.com/goburrow/modbus"
+	"github.com/crossnokaye/modbus"
 )
 
 func ClientTestReadCoils(t *testing.T, client modbus.Client) {
@@ -67,7 +67,7 @@ func ClientTestWriteSingleCoil(t *testing.T, client modbus.Client) {
 
 func ClientTestWriteSingleRegister(t *testing.T, client modbus.Client) {
 	// Write register 2 to 00 03 hex
-	address := uint16(0x0001)
+	address := uint32(0x0001)
 	value := uint16(0x0003)
 	results, err := client.WriteSingleRegister(address, value)
 	if err != nil {
