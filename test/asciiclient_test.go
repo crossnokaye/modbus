@@ -17,8 +17,6 @@ const (
 )
 
 func TestASCIIClient(t *testing.T) {
-
-
 	// Diagslave does not support broadcast id.
 	handler := modbus.NewASCIIClientHandler(asciiDevice)
 	handler.SlaveId = 17
