@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/goburrow/modbus"
+	"github.com/crossnokaye/modbus"
 )
 
 const (
@@ -18,12 +18,12 @@ const (
 )
 
 func TestTCPClient(t *testing.T) {
-	client := modbus.TCPClient(tcpDevice)
+	client := modbus.TCPClient(tcpDevice, time.Second, time.Second)
 	ClientTestAll(t, client)
 }
 
 func TestTCPClientAdvancedUsage(t *testing.T) {
-	handler := modbus.NewTCPClientHandler(tcpDevice)
+	handler := modbus.NewTCPClientHandler(tcpDevice, time.Second, time.Second)
 	handler.Timeout = 5 * time.Second
 	handler.SlaveId = 1
 	handler.Logger = log.New(os.Stdout, "tcp: ", log.LstdFlags)
