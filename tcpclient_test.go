@@ -116,10 +116,14 @@ func TestTCPInterruption(t *testing.T) {
 		IdleTimeout: 1 * time.Second,
 	}
 	req := []byte{0, 1, 0, 2, 0, 2, 1, 2}
-	client.Send(req)
-	// connection is reset after .Send failure
-	if client.conn != nil {
-		t.Fatalf("connection is not closed: %+v", client.conn)
+	_, err = client.Send(req)
+	if err == nil {
+		t.Fatalf("unexpected success")
+	} else {
+		// connection is reset after .Send failure
+		if client.conn != nil {
+			t.Fatalf("connection is not closed: %+v", client.conn)
+		}
 	}
 	// reconnect and check .Send again
 	go echoOnceHandler(t, ln)

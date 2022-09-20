@@ -27,7 +27,10 @@ func TestTCPClientAdvancedUsage(t *testing.T) {
 	handler.Timeout = 5 * time.Second
 	handler.SlaveId = 1
 	handler.Logger = log.New(os.Stdout, "tcp: ", log.LstdFlags)
-	handler.Connect()
+	err := handler.Connect()
+	if err != nil {
+		t.Fatalf("connection failure: %v", err)
+	}
 	defer handler.Close()
 
 	client := modbus.NewClient(handler)

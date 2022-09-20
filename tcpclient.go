@@ -21,9 +21,6 @@ const (
 	// Modbus Application Protocol
 	tcpHeaderSize = 7
 	tcpMaxLength  = 260
-	// Default TCP timeout is not set
-	tcpTimeout     = 10 * time.Second
-	tcpIdleTimeout = 60 * time.Second
 )
 
 // TCPClientHandler implements Packager and Transporter interface.
@@ -280,7 +277,7 @@ func (mb *tcpTransporter) closeIdle() {
 	if mb.IdleTimeout <= 0 {
 		return
 	}
-	idle := time.Now().Sub(mb.lastActivity)
+	idle := time.Since(mb.lastActivity)
 	if idle >= mb.IdleTimeout {
 		mb.logf("modbus: closing connection due to idle timeout: %v", idle)
 		mb.close()
