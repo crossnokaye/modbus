@@ -49,6 +49,20 @@ func TestTCPDecoding(t *testing.T) {
 	}
 }
 
+func echoOnceHandler(t *testing.T, ln net.Listener) {
+	conn, err := ln.Accept()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer conn.Close()
+	_, err = io.Copy(conn, conn)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+}
+
 func TestTCPTransporter(t *testing.T) {
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -56,19 +70,8 @@ func TestTCPTransporter(t *testing.T) {
 	}
 	defer ln.Close()
 
-	go func() {
-		conn, err := ln.Accept()
-		if err != nil {
-			t.Error(err)
-			return
-		}
-		defer conn.Close()
-		_, err = io.Copy(conn, conn)
-		if err != nil {
-			t.Error(err)
-			return
-		}
-	}()
+	go echoOnceHandler(t, ln)
+
 	client := &tcpTransporter{
 		Address:     ln.Addr().String(),
 		Timeout:     1 * time.Second,
@@ -85,6 +88,52 @@ func TestTCPTransporter(t *testing.T) {
 	time.Sleep(150 * time.Millisecond)
 	if client.conn != nil {
 		t.Fatalf("connection is not closed: %+v", client.conn)
+	}
+}
+
+func interruptedHandler(t *testing.T, ln net.Listener) {
+	conn, err := ln.Accept()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	// close the connection immediately after Accept()
+	conn.Close()
+}
+
+func TestTCPInterruption(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+
+	go interruptedHandler(t, ln)
+
+	client := &tcpTransporter{
+		Address:     ln.Addr().String(),
+		Timeout:     1 * time.Second,
+		IdleTimeout: 1 * time.Second,
+	}
+	req := []byte{0, 1, 0, 2, 0, 2, 1, 2}
+	_, err = client.Send(req)
+	if err == nil {
+		t.Fatalf("unexpected success")
+	} else {
+		// connection is reset after .Send failure
+		if client.conn != nil {
+			t.Fatalf("connection is not closed: %+v", client.conn)
+		}
+	}
+	// reconnect and check .Send again
+	go echoOnceHandler(t, ln)
+	rsp, err := client.Send(req)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if !bytes.Equal(req, rsp) {
+		t.Fatalf("unexpected response: %x", rsp)
 	}
 }
 
