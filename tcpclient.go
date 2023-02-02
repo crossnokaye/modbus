@@ -97,8 +97,11 @@ func (mb *tcpPackager) Verify(aduRequest []byte, aduResponse []byte) (err error)
 		return
 	}
 	// Unit id (1 byte)
-	if aduResponse[6] != aduRequest[6] {
-		err = fmt.Errorf("modbus: response unit id '%v' does not match request '%v'", aduResponse[6], aduRequest[6])
+	requestID := aduRequest[6]
+	responseID := aduRequest[6]
+	// only validate unit ids 1-247 which are not broadcast addresses (0, 248-255)
+	if requestID >= 1 && requestID <= 247 && responseID != requestID {
+		err = fmt.Errorf("modbus: response unit id '%v' does not match request '%v'", responseID, requestID)
 		return
 	}
 	return
