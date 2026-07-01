@@ -19,6 +19,9 @@ Bit access:
 *   Mask Write Register
 *   Read FIFO Queue
 
+Device identification:
+*   Read Device Identification (function 0x2B / MEI 0x0E, ID codes 1-4)
+
 Supported formats
 -----------------
 *   TCP
@@ -54,6 +57,20 @@ client := modbus.NewClient(handler)
 results, err := client.ReadDiscreteInputs(15, 2)
 results, err = client.WriteMultipleRegisters(1, 2, []byte{0, 3, 0, 4})
 results, err = client.WriteMultipleCoils(5, 10, []byte{4, 3})
+```
+
+Read Device Identification over TCP:
+```go
+client := modbus.TCPClient("localhost:502", 10*time.Second, time.Minute)
+// Read the basic identification objects (vendor name, product code, revision).
+// Codes 1-3 stream and are gathered across "More Follows" continuations;
+// code 4 reads a single object by id.
+id, err := client.ReadDeviceIdentification(modbus.ReadDeviceIDCodeBasic, 0)
+if err != nil {
+	// Modbus exceptions (e.g. unsupported function) are returned as *modbus.ModbusError.
+	log.Fatal(err)
+}
+fmt.Println(id) // prints conformity level and each returned object
 ```
 
 ```go
